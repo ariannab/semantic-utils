@@ -1,3 +1,5 @@
+package matching;
+
 import com.google.gson.reflect.TypeToken;
 import de.jungblut.distance.CosineDistance;
 import de.jungblut.glove.GloveRandomAccessReader;
