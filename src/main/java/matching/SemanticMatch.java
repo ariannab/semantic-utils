@@ -11,7 +11,7 @@ import java.util.LinkedHashMap;
  */
 public class SemanticMatch {
     Tag tag;
-    LinkedHashMap<MethodCodeElement, Double> candidates;
+    LinkedHashMap<Method, Double> candidates;
 
     public SemanticMatch(Tag tag) {
         this.tag = tag;

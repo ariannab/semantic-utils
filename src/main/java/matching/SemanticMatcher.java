@@ -1,5 +1,6 @@
 package matching;
 
+import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import de.jungblut.distance.CosineDistance;
 import de.jungblut.glove.GloveRandomAccessReader;
@@ -65,9 +66,9 @@ public class SemanticMatcher {
     }
 
 
-    private static List<DocumentedMethod> readMethodsFromJson(String goalPath){
+    private static List<DocumentedMethod> readMethodsFromJson(File goalFile){
         try (BufferedReader reader =
-                     Files.newBufferedReader(new File(goalPath).toPath())){
+                     Files.newBufferedReader(goalFile.toPath())){
 
             List<DocumentedMethod> methods = new ArrayList<>();
             methods.addAll(
@@ -80,8 +81,8 @@ public class SemanticMatcher {
         return null;
     }
 
-    public static void run(String goalPath){
-        List<DocumentedMethod> methods = readMethodsFromJson(goalPath);
+    public static void run(File goalFile, ArrayList<Method> codeElements){
+        List<DocumentedMethod> methods = readMethodsFromJson(goalFile);
         for(DocumentedMethod m : methods){
             if(m.returnTag() != null){
                 String condition = m.returnTag().getCondition().toString().replace("Optional[", "").replace("]", "");
@@ -90,17 +91,18 @@ public class SemanticMatcher {
 //                    System.out.println("\""+m.returnTag().getComment()+"\"");
 //                    System.out.println(condition);
 //                    System.out.println("\n");
-                }
-                try {
-                    semanticMatch(m.returnTag(), m);
-                } catch (IOException e) {
-                    e.printStackTrace();
+
+                    try {
+                        semanticMatch(m.returnTag(), m, codeElements);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
     }
 
-    static void semanticMatch(Tag tag, DocumentedMethod method) throws IOException {
+    static void semanticMatch(Tag tag, DocumentedMethod method, ArrayList<Method> codeElements) throws IOException {
         String comment = "";
         if (posSelect) comment = POSUtils.findSubjectPredicate(tag.getComment(), method);
         else comment = tag.getComment();
@@ -144,18 +146,21 @@ public class SemanticMatcher {
             }
         }
 
-        Map<MethodCodeElement, Double> distances = new HashMap<MethodCodeElement, Double>();
+//        Map<MethodCodeElement, Double> distances = new HashMap<MethodCodeElement, Double>();
+
+        Map<Method, Double> distances = new HashMap<Method, Double>();
         //    Set<CodeElement<?>> codeElements = Matcher.codeElementsMatch(method, subject, predicate);
         // for each code element, I want to take the vectors of its identifiers (like words componing the method name)
         // and compute the semantic similarity with the predicate (or the whole comment, we'll see)
 
-        Set<CodeElement<?>> codeElements = JavaElementsCollector.collect(method);
+//        Set<CodeElement<?>> codeElements = JavaElementsCollector.collect(method);
 
         if (codeElements != null && !codeElements.isEmpty()) {
             if (tfid) freq = TFIDUtils.computeTFIDF(freq, codeElements);
-            for (CodeElement<?> codeElement : codeElements) {
-                if (codeElement instanceof MethodCodeElement) {
-                    Set<String> ids = codeElement.getIdentifiers();
+//            for (CodeElement<?> codeElement : codeElements) {
+            for(Method codeElement : codeElements){
+//                if (codeElement instanceof MethodCodeElement) {
+                    Set<String> ids = codeElement.getIds();
                     DoubleVector methodVector = null;
                     for (String id : ids) {
                         String[] camelId = id.split("(?<!^)(?=[A-Z])");
@@ -180,9 +185,9 @@ public class SemanticMatcher {
 
                     if (methodVector != null && commentVector != null) {
                         double dist = cos.measureDistance(methodVector, commentVector);
-                        distances.put((MethodCodeElement) codeElement, dist);
+                        distances.put(codeElement, dist);
                     }
-                }
+//                }
             }
             retainMatches(tag, distances);
 //          printOnFile(tag, method, comment, distances);
@@ -190,7 +195,7 @@ public class SemanticMatcher {
     }
 
 
-    private static void retainMatches(Tag tag, Map<MethodCodeElement, Double> distances) throws IOException {
+    private static void retainMatches(Tag tag, Map<Method, Double> distances) throws IOException {
         SemanticMatch aMatch = new SemanticMatch(tag);
         distances.values().removeIf(new Predicate<Double>() {
             @Override

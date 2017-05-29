@@ -3,6 +3,7 @@ package matching;
 import org.toradocu.translator.CodeElement;
 import org.toradocu.translator.MethodCodeElement;
 
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Set;
 
@@ -12,12 +13,13 @@ import java.util.Set;
 public class TFIDUtils {
 
     public static Map<String, Double> computeTFIDF(
-            Map<String, Double> freq, Set<CodeElement<?>> codeElements) {
-        for (CodeElement<?> codeElement : codeElements) {
-            if (codeElement instanceof MethodCodeElement) {
-                freq = storeFrequencies(codeElement.getIdentifiers(), freq);
+            Map<String, Double> freq, ArrayList<Method> codeElements) {
+//        for (CodeElement<?> codeElement : codeElements) {
+        for(Method codeElement : codeElements){
+//            if (codeElement instanceof MethodCodeElement) {
+                freq = storeFrequencies(codeElement.getIds(), freq);
             }
-        }
+//        }
 
         freq = adjustFrequencies(freq);
         return freq;
