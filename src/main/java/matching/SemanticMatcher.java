@@ -1,6 +1,9 @@
 package matching;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import de.jungblut.distance.CosineDistance;
 import de.jungblut.glove.GloveRandomAccessReader;
@@ -9,9 +12,6 @@ import de.jungblut.math.DoubleVector;
 import edu.stanford.nlp.ling.CoreLabel;
 import org.toradocu.extractor.DocumentedMethod;
 import org.toradocu.extractor.Tag;
-import org.toradocu.translator.CodeElement;
-import org.toradocu.translator.JavaElementsCollector;
-import org.toradocu.translator.MethodCodeElement;
 import org.toradocu.translator.StanfordParser;
 import org.toradocu.util.GsonInstance;
 
@@ -33,6 +33,8 @@ public class SemanticMatcher {
     static float distanceThreshold;
     static List<String> stopwords;
     static String fileName;
+
+    /** Stores all the {@code SemanticMatch}es collected during a test. */
     static List<SemanticMatch> semanticMatches;
 
     public SemanticMatcher(
@@ -46,6 +48,7 @@ public class SemanticMatcher {
         this.stopwordsRemoval = stopwordsRemoval;
         this.posSelect = posSelect;
         this.distanceThreshold = distanceThreshold;
+        semanticMatches = new ArrayList<SemanticMatch>();
 
         //TODO very naive list. Not the best to use.
         this.stopwords =
@@ -54,8 +57,8 @@ public class SemanticMatcher {
                                 "true", "false", "the", "a", "if", "be", "is", "are", "was", "were", "this", "do",
                                 "does", "did"));
 
-        if (stopwordsRemoval) this.fileName = "semanticOutputs/semanticMatch_" + className + ".txt";
-        else this.fileName = "semanticOutputs/semanticMatch_noSW_" + className + ".txt";
+        if (stopwordsRemoval) this.fileName = "semantic_" + className + ".txt";
+        else this.fileName = "semantic_noSW_" + className + ".txt";
 
         File file = new File(this.fileName);
         try {
@@ -81,10 +84,18 @@ public class SemanticMatcher {
         return null;
     }
 
-    public static void run(File goalFile, ArrayList<Method> codeElements){
+    /**
+     * Take a goal file of a certain class in order to extract all its {@code DocumentedMethod}s and
+     * the list of Java code elements that can be used in the translation.
+     *
+     * @param goalFile the class goal file
+     * @param codeElements the list of Java code elements for the translation
+     */
+    public static void run(File goalFile, ArrayList<SimpleMethodCodeElement> codeElements){
         List<DocumentedMethod> methods = readMethodsFromJson(goalFile);
         for(DocumentedMethod m : methods){
             if(m.returnTag() != null){
+                // For simplicity, currently we are testing just return tags (just the ones that have a non-empty goal condition
                 String condition = m.returnTag().getCondition().toString().replace("Optional[", "").replace("]", "");
                 if(!condition.equals("")) {
 //                    System.out.println(m.getSignature());
@@ -93,7 +104,11 @@ public class SemanticMatcher {
 //                    System.out.println("\n");
 
                     try {
-                        semanticMatch(m.returnTag(), m, codeElements);
+                        semanticMatch(m.returnTag(), m,
+                                codeElements
+                                        .stream()
+                                        .filter(forMethod -> forMethod.getForMethod().equals(m.getSignature()))
+                                        .collect(Collectors.toCollection(ArrayList::new)));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -102,11 +117,11 @@ public class SemanticMatcher {
         }
     }
 
-    static void semanticMatch(Tag tag, DocumentedMethod method, ArrayList<Method> codeElements) throws IOException {
+    static void semanticMatch(Tag tag, DocumentedMethod method, ArrayList<SimpleMethodCodeElement> codeElements) throws IOException {
         String comment = "";
         if (posSelect) comment = POSUtils.findSubjectPredicate(tag.getComment(), method);
         else comment = tag.getComment();
-        comment = comment.replaceAll("[^A-Za-z0-9]", "");
+        comment = comment.replaceAll("[^A-Za-z0-9! ]", "");
 
         String[] wordComment = comment.split(" ");
         int index = 0;
@@ -148,7 +163,7 @@ public class SemanticMatcher {
 
 //        Map<MethodCodeElement, Double> distances = new HashMap<MethodCodeElement, Double>();
 
-        Map<Method, Double> distances = new HashMap<Method, Double>();
+        Map<SimpleMethodCodeElement, Double> distances = new HashMap<SimpleMethodCodeElement, Double>();
         //    Set<CodeElement<?>> codeElements = Matcher.codeElementsMatch(method, subject, predicate);
         // for each code element, I want to take the vectors of its identifiers (like words componing the method name)
         // and compute the semantic similarity with the predicate (or the whole comment, we'll see)
@@ -158,9 +173,9 @@ public class SemanticMatcher {
         if (codeElements != null && !codeElements.isEmpty()) {
             if (tfid) freq = TFIDUtils.computeTFIDF(freq, codeElements);
 //            for (CodeElement<?> codeElement : codeElements) {
-            for(Method codeElement : codeElements){
+            for(SimpleMethodCodeElement codeElement : codeElements){
 //                if (codeElement instanceof MethodCodeElement) {
-                    Set<String> ids = codeElement.getIds();
+                    Set<String> ids = codeElement.getCodeElementIds();
                     DoubleVector methodVector = null;
                     for (String id : ids) {
                         String[] camelId = id.split("(?<!^)(?=[A-Z])");
@@ -192,10 +207,26 @@ public class SemanticMatcher {
             retainMatches(tag, distances);
 //          printOnFile(tag, method, comment, distances);
         }
+        exportInjson();
+    }
+
+    private static void exportInjson() throws IOException {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        if(!semanticMatches.isEmpty()) {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileName+"_results.json", true));
+            for (SemanticMatch sm : semanticMatches) {
+                    JsonParser jp = new JsonParser();
+                    JsonElement je = jp.parse(gson.toJson(sm));
+                    String prettyJsonString = gson.toJson(je);
+
+                    writer.write(prettyJsonString+"\n");
+                }
+            writer.close();
+        }
     }
 
 
-    private static void retainMatches(Tag tag, Map<Method, Double> distances) throws IOException {
+    private static void retainMatches(Tag tag, Map<SimpleMethodCodeElement, Double> distances) throws IOException {
         SemanticMatch aMatch = new SemanticMatch(tag);
         distances.values().removeIf(new Predicate<Double>() {
             @Override
@@ -214,6 +245,7 @@ public class SemanticMatcher {
                         LinkedHashMap::new
                 ));
 
+        aMatch.computeCorrectness();
         semanticMatches.add(aMatch);
     }
 

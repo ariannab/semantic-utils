@@ -16,25 +16,25 @@ import java.util.ArrayList;
 public class SemanticMatcherTest {
 
     static String goalOutput= "goals/freecol-0.11.6/net.sf.freecol.common.model.Unit_goal.json";
-    static String methods = "code-elements/Unit_codeElements.json";
-
+    static String methods = "code-elements/net.sf.freecol.common.model.Unit_codeElements.json";
 
     @Test
     public void testStopwordsRemoval() throws FileNotFoundException {
-        ArrayList<Method> collectedMethods = new ArrayList<Method>();
-
+        ArrayList<SimpleMethodCodeElement> collectedMethods = new ArrayList<SimpleMethodCodeElement>();
         SemanticMatcher semanticMatcher = new SemanticMatcher(
                 "net.sf.freecol.common.model.Unit", true, false, false, (float).26);
 
+        // Load all the DocumentedMethods composing a class using its goal file
         ClassLoader classLoader = getClass().getClassLoader();
         File file = new File(classLoader.getResource(goalOutput).getFile());
 
         Gson gson = new GsonBuilder().create();
 
+        // This is the job that normally the JavaElementsCollector would do in Toradocu. For simplicity of test those code elements are stored in a Json.
         JsonStreamParser parser = new JsonStreamParser(new FileReader(new File(classLoader.getResource(methods).getFile())));
         while(parser.hasNext())
         {
-            collectedMethods.add(gson.fromJson(parser.next(), Method.class));
+            collectedMethods.add(gson.fromJson(parser.next(), SimpleMethodCodeElement.class));
         }
 
         semanticMatcher.run(file, collectedMethods);
