@@ -11,15 +11,18 @@ import java.util.LinkedHashMap;
  */
 
 public class SemanticMatch {
+    String method;
     Tag tag;
+    String parsedComment;
     LinkedHashMap<SimpleMethodCodeElement, Double> candidates;
     boolean correct;
 
 
-    public SemanticMatch(Tag tag) {
+    public SemanticMatch(Tag tag, String method, String parsedComment) {
         this.tag = tag;
+        this.method = method;
+        this.parsedComment = parsedComment;
     }
-
 
     public void computeCorrectness() {
         String firstSignature = candidates.keySet().iterator().next().getCodeElementName();

@@ -10,7 +10,7 @@ import java.util.Set;
 public class TFIDUtils {
 
     public static Map<String, Double> computeTFIDF(
-            Map<String, Double> freq, ArrayList<SimpleMethodCodeElement> codeElements) {
+            Map<String, Double> freq, Set<SimpleMethodCodeElement> codeElements) {
 //        for (CodeElement<?> codeElement : codeElements) {
         for(SimpleMethodCodeElement codeElement : codeElements){
 //            if (codeElement instanceof MethodCodeElement) {
