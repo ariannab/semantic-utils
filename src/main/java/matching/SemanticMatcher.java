@@ -126,7 +126,7 @@ public class SemanticMatcher {
                 }
             }
         }
-        exportInjson();
+        exportTojson();
     }
 
     static void semanticMatch(Tag tag, DocumentedMethod method, Set<SimpleMethodCodeElement> codeElements) throws IOException {
@@ -238,7 +238,7 @@ public class SemanticMatcher {
         return wordComment;
     }
 
-    private static void exportInjson() throws IOException {
+    private static void exportTojson() throws IOException {
         File file = new File(fileName+"_results.json");
         try {
             Files.deleteIfExists(file.toPath());
@@ -262,7 +262,7 @@ public class SemanticMatcher {
 
 
     private static void retainMatches(String parsedComment, String name, Tag tag, Map<SimpleMethodCodeElement, Double> distances) throws IOException {
-        SemanticMatch aMatch = new SemanticMatch(tag, name, parsedComment);
+        SemanticMatch aMatch = new SemanticMatch(tag, name, parsedComment, distanceThreshold);
         distances.values().removeIf(new Predicate<Double>() {
             @Override
             public boolean test(Double aDouble) {
@@ -282,6 +282,7 @@ public class SemanticMatcher {
 
         if(!aMatch.candidates.isEmpty()) {
             aMatch.computeCorrectness();
+            aMatch.computePartialCorrectness();
             semanticMatches.add(aMatch);
         }
     }
