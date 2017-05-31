@@ -26,6 +26,9 @@ import java.util.stream.Collectors;
 
 /**
  * Created by arianna on 29/05/17.
+ *
+ * Main class. Contains all the methods to compute the {@code SemantichMatch}es for a given class.
+ *
  */
 public class SemanticMatcher {
 
@@ -57,7 +60,7 @@ public class SemanticMatcher {
                 new ArrayList<>(
                         Arrays.asList(
                                 "true", "false", "the", "a", "if", "be", "is", "are", "was", "were", "this", "do",
-                                "does", "did"));
+                                "does", "did", "not"));
 
         if (stopwordsRemoval) this.fileName = "semantic_" + className;
         else this.fileName = "semantic_noSW_" + className;
@@ -87,9 +90,10 @@ public class SemanticMatcher {
     }
 
     /**
-     * Take a goal file of a certain class in order to extract all its {@code DocumentedMethod}s and
+     * Takes a goal file of a certain class in order to extract all its {@code DocumentedMethod}s and
      * the list of Java code elements that can be used in the translation.
-     *  @param goalFile the class goal file
+     *
+     * @param goalFile the class goal file
      * @param codeElements the list of Java code elements for the translation
      */
     public static void run(File goalFile, Set<SimpleMethodCodeElement> codeElements) throws IOException {
@@ -129,6 +133,15 @@ public class SemanticMatcher {
         exportTojson();
     }
 
+
+    /**
+     * Computes semantic matching through GloVe vectors.
+     *
+     * @param tag the tag for which we want to produce a condition translation
+     * @param method the method the tag belongs to
+     * @param codeElements the code elements that are possible candidates to use in the translation
+     * @throws IOException if the GloVe database couldn't be read
+     */
     static void semanticMatch(Tag tag, DocumentedMethod method, Set<SimpleMethodCodeElement> codeElements) throws IOException {
         Set<String> commentWordSet = new HashSet<String>(Arrays.asList(parseComment(tag, method)));
         String parsedComment = String.join(" ", commentWordSet).replaceAll("\\s+", " ").trim();
@@ -213,6 +226,13 @@ public class SemanticMatcher {
         return commentVector;
     }
 
+    /**
+     * Parse the original tag comment according to the configuration parameters.
+     *
+     * @param tag the {@code Tag} the comment belongs to
+     * @param method the {@code DocumentedMethod} containing the tag
+     * @return the parsed comment in form of array of strings (words)
+     */
     @NotNull
     private static String[] parseComment(Tag tag, DocumentedMethod method) {
         String comment = "";
@@ -238,6 +258,11 @@ public class SemanticMatcher {
         return wordComment;
     }
 
+    /**
+     * Exports the result in a JSON format.
+     *
+     * @throws IOException if there were problems accessing the file
+     */
     private static void exportTojson() throws IOException {
         File file = new File(fileName+"_results.json");
         try {
@@ -261,8 +286,16 @@ public class SemanticMatcher {
     }
 
 
-    private static void retainMatches(String parsedComment, String name, Tag tag, Map<SimpleMethodCodeElement, Double> distances) throws IOException {
-        SemanticMatch aMatch = new SemanticMatch(tag, name, parsedComment, distanceThreshold);
+    /**
+     * Compute and instantiate the {@code SemantiMatch} for a tag.
+     *
+     * @param parsedComment the parse tag comment
+     * @param methodName name of the method the tag belongs to
+     * @param tag the {@code Tag}
+     * @param distances the computed distance, for every possible code element candidate, from the parsed comment
+     */
+    private static void retainMatches(String parsedComment, String methodName, Tag tag, Map<SimpleMethodCodeElement, Double> distances){
+        SemanticMatch aMatch = new SemanticMatch(tag, methodName, parsedComment, distanceThreshold);
         distances.values().removeIf(new Predicate<Double>() {
             @Override
             public boolean test(Double aDouble) {

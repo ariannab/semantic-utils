@@ -44,6 +44,7 @@ public class SemanticMatcherTest {
     }
 
 
+    //TODO generalize the test cases.
     @Test
     public void testAll(){
         String goalOutput= "goals/freecol-0.11.6/net.sf.freecol.common.model.Unit_goal.json";
@@ -56,8 +57,8 @@ public class SemanticMatcherTest {
             e.printStackTrace();
         }
 
-        goalOutput= "goals/jgrapht/org.jgrapht.graph.AbstractGraph_goal.json";
-        codeElements = "code-elements/org.jgrapht.graph.AbstractGraph_codeElements.json";
+        goalOutput= "goals/jgrapht/org.jgrapht.Graph_goal.json";
+        codeElements = "code-elements/org.jgrapht.Graph_codeElements.json";
         className = codeElements.substring(codeElements.indexOf("/")+1, codeElements.indexOf("_"));
 
         try {

@@ -9,15 +9,15 @@ import java.util.List;
 
 /**
  * Created by arianna on 29/05/17.
+ *
+ * Utils for the selection of specific POS tags (for comment parsing).
  */
 public class POSUtils {
 
     public static String findSubjectPredicate(String comment, DocumentedMethod method) {
         String result = "";
-        if(comment.contains("aboard"))
-            System.out.print("DEBUUUUUUUUUUUUUUG");
         for (SemanticGraph sg : StanfordParser.getSemanticGraphs(comment, method)) {
-            //Search nouns and their adjectives.
+            //Search nouns, their adjectives and adverbs.
 
             List<IndexedWord> nouns = sg.getAllNodesByPartOfSpeechPattern("NN(.*)");
             List<IndexedWord> adjs = sg.getAllNodesByPartOfSpeechPattern("JJ(.*)");
