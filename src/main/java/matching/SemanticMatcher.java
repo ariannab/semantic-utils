@@ -99,15 +99,16 @@ public class SemanticMatcher {
     public static void run(File goalFile, Set<SimpleMethodCodeElement> codeElements) throws IOException {
         Set<DocumentedMethod> methods = readMethodsFromJson(goalFile);
         for(DocumentedMethod m : methods){
+            HashSet<SimpleMethodCodeElement> referredCodeElements = codeElements
+                    .stream()
+                    .filter(forMethod -> forMethod.getForMethod().equals(m.getSignature()))
+                    .collect(Collectors.toCollection(HashSet::new));
+
             if(m.returnTag() != null){
                 String condition = m.returnTag().getCondition().get();
                 if(!condition.equals("")) {
                     try {
-                        semanticMatch(m.returnTag(), m,
-                                codeElements
-                                        .stream()
-                                        .filter(forMethod -> forMethod.getForMethod().equals(m.getSignature()))
-                                        .collect(Collectors.toCollection(HashSet::new)));
+                        semanticMatch(m.returnTag(), m, referredCodeElements);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -118,11 +119,7 @@ public class SemanticMatcher {
                     String condition = throwTag.getCondition().get();
                     if(!condition.equals("")) {
                         try {
-                            semanticMatch(throwTag, m,
-                                    codeElements
-                                            .stream()
-                                            .filter(forMethod -> forMethod.getForMethod().equals(m.getSignature()))
-                                            .collect(Collectors.toCollection(HashSet::new)));
+                            semanticMatch(throwTag, m, referredCodeElements);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -160,14 +157,14 @@ public class SemanticMatcher {
 
         DoubleVector commentVector = getCommentVector(commentWordSet, db);
 
-//        Map<MethodCodeElement, Double> distances = new HashMap<MethodCodeElement, Double>();
-
+//      Map<MethodCodeElement, Double> distances = new HashMap<MethodCodeElement, Double>();
         Map<SimpleMethodCodeElement, Double> distances = new HashMap<SimpleMethodCodeElement, Double>();
-        //    Set<CodeElement<?>> codeElements = Matcher.codeElementsMatch(method, subject, predicate);
-        // for each code element, I want to take the vectors of its identifiers (like words componing the method name)
-        // and compute the semantic similarity with the predicate (or the whole comment, we'll see)
 
-//        Set<CodeElement<?>> codeElements = JavaElementsCollector.collect(method);
+ //     Set<CodeElement<?>> codeElements = Matcher.codeElementsMatch(method, subject, predicate);
+//      Set<CodeElement<?>> codeElements = JavaElementsCollector.collect(method);
+
+        // For each code element, I want to take the vectors of its identifiers (like words componing the method name)
+        // and compute the semantic similarity with the predicate (or the whole comment, we'll see)
 
         int index = 0;
         if (codeElements != null && !codeElements.isEmpty()) {
@@ -296,6 +293,8 @@ public class SemanticMatcher {
      */
     private static void retainMatches(String parsedComment, String methodName, Tag tag, Map<SimpleMethodCodeElement, Double> distances){
         SemanticMatch aMatch = new SemanticMatch(tag, methodName, parsedComment, distanceThreshold);
+
+        // Select as candidates only code elements that have a semantic distance below the chosen threshold.
         distances.values().removeIf(new Predicate<Double>() {
             @Override
             public boolean test(Double aDouble) {

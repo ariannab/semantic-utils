@@ -11,11 +11,13 @@ import java.util.Set;
 public class SimpleMethodCodeElement {
     private String forMethod;
     private String codeElementName;
+    private String returnType;
     private Set<String> codeElementIds;
 
-    public SimpleMethodCodeElement(String forMethod, String codeElementName, Set<String> codeElementIds) {
+    public SimpleMethodCodeElement(String forMethod,String codeElementName,  String returnType, Set<String> codeElementIds) {
         this.forMethod = forMethod;
         this.codeElementName = codeElementName;
+        this.returnType = returnType;
         this.codeElementIds = codeElementIds;
     }
 
@@ -30,6 +32,8 @@ public class SimpleMethodCodeElement {
     public Set<String> getCodeElementIds() {
         return codeElementIds;
     }
+
+    public String getReturnType() { return returnType; }
 
     @Override
     public String toString() {
