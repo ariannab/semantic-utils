@@ -1,6 +1,5 @@
 package matching;
 
-import com.crtomirmajer.wmd4j.WordMovers;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
@@ -8,11 +7,8 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import de.jungblut.distance.CosineDistance;
 import de.jungblut.glove.GloveRandomAccessReader;
-import de.jungblut.glove.impl.GloveBinaryRandomAccessReader;
 import de.jungblut.math.DoubleVector;
 import edu.stanford.nlp.ling.CoreLabel;
-import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.toradocu.extractor.DocumentedMethod;
@@ -22,7 +18,6 @@ import org.toradocu.util.GsonInstance;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -96,11 +91,13 @@ public class SemanticMatcher {
      * Takes a goal file of a certain class in order to extract all its {@code DocumentedMethod}s and
      * the list of Java code elements that can be used in the translation.
      *
+     * @param db
      * @param goalFile the class goal file
      * @param codeElements the list of Java code elements for the translation
      */
-    public static void runVectorMatch(File goalFile, Set<SimpleMethodCodeElement> codeElements) throws IOException {
+    public static void runVectorMatch(GloveRandomAccessReader db, File goalFile, Set<SimpleMethodCodeElement> codeElements) throws IOException {
         Set<DocumentedMethod> methods = readMethodsFromJson(goalFile);
+
         for(DocumentedMethod m : methods){
             HashSet<SimpleMethodCodeElement> referredCodeElements = codeElements
                     .stream()
@@ -111,7 +108,7 @@ public class SemanticMatcher {
                 String condition = m.returnTag().getCondition().get();
                 if(!condition.equals("")) {
                     try {
-                        vectorsMatch(m.returnTag(), m, referredCodeElements);
+                        vectorsMatch(db, m.returnTag(), m, referredCodeElements);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -122,7 +119,7 @@ public class SemanticMatcher {
                     String condition = throwTag.getCondition().get();
                     if(!condition.equals("")) {
                         try {
-                            vectorsMatch(throwTag, m, referredCodeElements);
+                            vectorsMatch(db, throwTag, m, referredCodeElements);
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
@@ -130,8 +127,45 @@ public class SemanticMatcher {
                 }
             }
         }
-        exportTojson(false);
+        exportTojson(false, false);
     }
+
+
+    public static void runConceptualSim(GloveRandomAccessReader db, File goalFile, Set<SimpleMethodCodeElement> codeElements) throws IOException {
+        Set<DocumentedMethod> methods = readMethodsFromJson(goalFile);
+
+        for(DocumentedMethod m : methods){
+            HashSet<SimpleMethodCodeElement> referredCodeElements = codeElements
+                    .stream()
+                    .filter(forMethod -> forMethod.getForMethod().equals(m.getSignature()))
+                    .collect(Collectors.toCollection(HashSet::new));
+
+            if(m.returnTag() != null){
+                String condition = m.returnTag().getCondition().get();
+                if(!condition.equals("")) {
+                    try {
+                        conceptualSimMatch(db, m.returnTag(), m, referredCodeElements);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            if(!m.throwsTags().isEmpty()){
+                for(Tag throwTag : m.throwsTags()){
+                    String condition = throwTag.getCondition().get();
+                    if(!condition.equals("")) {
+                        try {
+                            conceptualSimMatch(db, throwTag, m, referredCodeElements);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        }
+        exportTojson(false, true);
+    }
+
 
 //    public void runWmdMatch(File goalFile, Set<SimpleMethodCodeElement> codeElements) throws IOException {
 //        Set<DocumentedMethod> methods = readMethodsFromJson(goalFile);
@@ -183,19 +217,9 @@ public class SemanticMatcher {
      * @param codeElements the code elements that are possible candidates to use in the translation
      * @throws IOException if the GloVe database couldn't be read
      */
-    static void vectorsMatch(Tag tag, DocumentedMethod method, Set<SimpleMethodCodeElement> codeElements) throws IOException {
-        Set<String> commentWordSet = new HashSet<String>(Arrays.asList(parseComment(tag, method)));
+    static void vectorsMatch(GloveRandomAccessReader db, Tag tag, DocumentedMethod method, Set<SimpleMethodCodeElement> codeElements) throws IOException {
+        Set<String> commentWordSet = parseComment(tag, method);
         String parsedComment = String.join(" ", commentWordSet).replaceAll("\\s+", " ").trim();
-
-        GloveRandomAccessReader db = null;
-        try {
-            db =
-                    new GloveBinaryRandomAccessReader(
-                            Paths.get("/home/arianna/Scaricati/glove-master/target/glove-binary"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
         Map<String, Double> freq = new HashMap<String, Double>();
         CosineDistance cos = new CosineDistance();
 
@@ -228,23 +252,23 @@ public class SemanticMatcher {
         }
     }
 
-    void wmdMatch(WordMovers wm, Tag tag, DocumentedMethod method, Set<SimpleMethodCodeElement> codeElements) throws IOException {
-        Map<SimpleMethodCodeElement, Double> distances = new HashMap<SimpleMethodCodeElement, Double>();
-
-        String parsedComment = tag.getComment();
-        if (codeElements != null && !codeElements.isEmpty()) {
-            for(SimpleMethodCodeElement codeElement : codeElements){
-                Set<String> ids = codeElement.getCodeElementIds();
-                for (String id : ids) {
-                    String[] camelId = id.split("(?<!^)(?=[A-Z])");
-                    String joinedId = String.join(" ", camelId).replaceAll("\\s+", " ").trim();
-                    double dist = wm.distance(parsedComment, joinedId);
-                    distances.put(codeElement, dist);
-                }
-            }
-        }
-        retainMatches(parsedComment, method.getName(), tag, distances);
-    }
+//    void wmdMatch(WordMovers wm, Tag tag, DocumentedMethod method, Set<SimpleMethodCodeElement> codeElements) throws IOException {
+//        Map<SimpleMethodCodeElement, Double> distances = new HashMap<SimpleMethodCodeElement, Double>();
+//
+//        String parsedComment = tag.getComment();
+//        if (codeElements != null && !codeElements.isEmpty()) {
+//            for(SimpleMethodCodeElement codeElement : codeElements){
+//                Set<String> ids = codeElement.getCodeElementIds();
+//                for (String id : ids) {
+//                    String[] camelId = id.split("(?<!^)(?=[A-Z])");
+//                    String joinedId = String.join(" ", camelId).replaceAll("\\s+", " ").trim();
+//                    double dist = wm.distance(parsedComment, joinedId);
+//                    distances.put(codeElement, dist);
+//                }
+//            }
+//        }
+//        retainMatches(parsedComment, method.getName(), tag, distances);
+//    }
 
     /**
      * Build the vector representing a code element, made by its IDs camel case-splitted
@@ -261,7 +285,7 @@ public class SemanticMatcher {
         DoubleVector codeElementVector = null;
         for (String id : ids) {
             String[] camelId = id.split("(?<!^)(?=[A-Z])");
-            String joinedId = String.join(" ", camelId).replaceAll("\\s+", " ").trim();
+            String joinedId = String.join(" ", camelId).replaceAll("\\s+", " ").toLowerCase().trim();
             index = 0;
             for (CoreLabel lemma : StanfordParser.lemmatize(joinedId)) {
                 if (lemma != null) camelId[index] = lemma.lemma();
@@ -299,6 +323,71 @@ public class SemanticMatcher {
         return commentVector;
     }
 
+
+    static void conceptualSimMatch(GloveRandomAccessReader db, Tag tag, DocumentedMethod method, Set<SimpleMethodCodeElement> codeElements) throws IOException {
+        Set<String> commentWordSet = parseComment(tag, method);
+        String parsedComment = String.join(" ", commentWordSet).replaceAll("\\s+", " ").trim();
+        Map<String, Double> freq = new HashMap<String, Double>();
+
+//      Map<MethodCodeElement, Double> distances = new HashMap<MethodCodeElement, Double>();
+        Map<SimpleMethodCodeElement, Double> distances = new HashMap<SimpleMethodCodeElement, Double>();
+
+        //     Set<CodeElement<?>> codeElements = Matcher.codeElementsMatch(method, subject, predicate);
+//      Set<CodeElement<?>> codeElements = JavaElementsCollector.collect(method);
+
+        // For each code element, I want to take the vectors of its identifiers (like words componing the method name)
+        // and compute the semantic similarity with the predicate (or the whole comment, we'll see)
+
+        if (codeElements != null && !codeElements.isEmpty()) {
+            if (tfid) freq = TFIDUtils.computeTFIDF(freq, codeElements);
+//            for (CodeElement<?> codeElement : codeElements) {
+            for(SimpleMethodCodeElement codeElement : codeElements){
+//                if (codeElement instanceof MethodCodeElement) {
+                String codeElementName = codeElement.getCodeElementIds().iterator().next();
+                String[] camelId = codeElementName.split("(?<!^)(?=[A-Z])");
+                String joinedId = String.join(" ", camelId).replaceAll("\\s+", " ").toLowerCase().trim();
+                int index = 0;
+                for (CoreLabel lemma : StanfordParser.lemmatize(joinedId)) {
+                    if (lemma != null) camelId[index] = lemma.lemma();
+                    index++;
+                }
+                double dist = computeConceptualSimilarity(db, commentWordSet, new HashSet<String>(Arrays.asList(camelId)));
+                distances.put(codeElement, dist);
+            }
+            retainMatches(parsedComment, method.getName(), tag, distances);
+        }
+    }
+
+    private static double computeConceptualSimilarity(GloveRandomAccessReader db, Set<String> commentTerms, Set<String> codeElementTerms) throws IOException {
+       /*
+       * Per ogni termine nel commento devo trovare il best match con un termine del code element.
+       * Una volta trovato, lo tengo da parte. Ripeto finché non ho esaurito tutti i termini del commento.
+       * I valori tenuti da parte vanno sommati: il risultato è Txy.
+       */
+       double bestMatch = 1;
+       double sum = 0;
+       for(String commentT : commentTerms){
+           for(String codeElemT : codeElementTerms){
+               double distance = simDistance(db, commentT, codeElemT);
+               if(distance < bestMatch) bestMatch = distance;
+           }
+           sum += bestMatch;
+           bestMatch = 1;
+       }
+       return sum;
+    }
+
+    private static double simDistance(GloveRandomAccessReader db, String commentT, String codeElemT) throws IOException {
+        DoubleVector ctVector = db.get(commentT);
+        DoubleVector cetVector = db.get(codeElemT);
+        CosineDistance cos = new CosineDistance();
+        if(ctVector!=null && cetVector!=null)
+            return (1+cos.measureDistance(ctVector, cetVector))/2;
+
+        return 1;
+    }
+
+
     /**
      * Parse the original tag comment according to the configuration parameters.
      *
@@ -307,7 +396,7 @@ public class SemanticMatcher {
      * @return the parsed comment in form of array of strings (words)
      */
     @NotNull
-    private static String[] parseComment(Tag tag, DocumentedMethod method) {
+    private static Set<String> parseComment(Tag tag, DocumentedMethod method) {
         String comment = "";
         if (posSelect) comment = POSUtils.findSubjectPredicate(tag.getComment(), method);
         else comment = tag.getComment();
@@ -327,8 +416,10 @@ public class SemanticMatcher {
                     wordComment[i] = "";
             }
         }
+        Set<String> wordList = new HashSet<>(Arrays.asList(wordComment));
+        wordList.removeAll(Arrays.asList(""));
 
-        return wordComment;
+        return wordList;
     }
 
     /**
@@ -336,12 +427,15 @@ public class SemanticMatcher {
      *
      * @throws IOException if there were problems accessing the file
      */
-    private static void exportTojson(boolean wmd) throws IOException {
+    private static void exportTojson(boolean wmd, boolean concSim) throws IOException {
         String resultFile="";
-        if(!wmd)
-            resultFile = fileName+"_vectors_results.json";
-        else
+        if(wmd)
             resultFile = fileName+"_wmd.json";
+        else if(concSim)
+           resultFile = fileName+"_concSim_results.json";
+        else
+            resultFile = fileName+"_vectors_results.json";
+
 
         File file = new File(resultFile);
         try {
