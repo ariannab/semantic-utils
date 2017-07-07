@@ -23,7 +23,7 @@ public class SemanticMatcherTest {
     public void testVectorMatch(GloveRandomAccessReader db, String className, String goalOutputFile, String codeElementsFile) throws FileNotFoundException {
         Set<SimpleMethodCodeElement> collectedMethods = new HashSet<SimpleMethodCodeElement>();
         SemanticMatcher semanticMatcher = new SemanticMatcher(
-                className, true, true, false, (float).24);
+                className, true, true, false, (float)0.24);
 
         // Load all the DocumentedMethods composing a class using its goal file
         ClassLoader classLoader = getClass().getClassLoader();
@@ -48,7 +48,7 @@ public class SemanticMatcherTest {
     public void testConcSimMatch(GloveRandomAccessReader db, String className, String goalOutputFile, String codeElementsFile) throws FileNotFoundException {
         Set<SimpleMethodCodeElement> collectedMethods = new HashSet<SimpleMethodCodeElement>();
         SemanticMatcher semanticMatcher = new SemanticMatcher(
-                className, true, true, false, (float)2);
+                className, true, true, false, (float)0.8);
 
         // Load all the DocumentedMethods composing a class using its goal file
         ClassLoader classLoader = getClass().getClassLoader();
