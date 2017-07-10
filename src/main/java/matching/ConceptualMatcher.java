@@ -18,6 +18,8 @@ import java.util.stream.Collectors;
 
 /**
  * Created by arianna on 10/07/17.
+ *
+ * Component that implements the conceptual similarity, derived from the alignments matrix.
  */
 public class ConceptualMatcher extends SemanticMatcher {
 
@@ -48,18 +50,15 @@ public class ConceptualMatcher extends SemanticMatcher {
                 String codeElementName = codeElement.getCodeElementIds().iterator().next();
                 String[] camelId = codeElementName.split("(?<!^)(?=[A-Z])");
                 String joinedId = String.join(" ", camelId).replaceAll("\\s+", " ").toLowerCase().trim();
+
                 int index = 0;
                 for (CoreLabel lemma : StanfordParser.lemmatize(joinedId)) {
                     if (lemma != null) camelId[index] = lemma.lemma();
                     index++;
                 }
                 Set<String> codeElementWordSet = removeStopWords(camelId);
-//                Set<String> codeElementWordSet = new HashSet<String>(Arrays.asList(camelId));
-//                double totalSimilarity = computeTotSimilarity(db, commentWordSet, codeElementWordSet);
+
                 distances.put(codeElement,computeAlignmentMatrix(db, commentWordSet, codeElementWordSet));
-                //Normalize the computed similarities
-//                double conceptualSimilarity = totalSimilarity*2/(commentWordSet.size()+codeElementWordSet.size());
-//                distances.put(codeElement, conceptualSimilarity);
             }
             retainMatches(parsedComment, method.getName(), tag, distances);
         }

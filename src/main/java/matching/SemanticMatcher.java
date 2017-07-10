@@ -21,7 +21,9 @@ import java.util.stream.Collectors;
 /**
  * Created by arianna on 29/05/17.
  *
- * Main class. Contains all the methods to compute the {@code SemantichMatch}es for a given class.
+ * Main component. Contains all the methods to compute the {@code SemantichMatch}es for a given class.
+ * This implements the "basic" semantic matching, i.e. the one that uses plain vector sums.
+ * Other kinds of matcher will extend this class.
  *
  */
 public class SemanticMatcher {
@@ -31,12 +33,12 @@ public class SemanticMatcher {
     static boolean tfid;
     static float distanceThreshold;
     static List<String> stopwords;
+    public static String className;
     public static String fileName;
-
     /** Stores all the {@code SemanticMatch}es collected during a test. */
     public static Set<SemanticMatch> semanticMatches;
 
-    public SemanticMatcher(
+    SemanticMatcher(
             String className,
             boolean stopwordsRemoval,
             boolean posSelect,
@@ -47,19 +49,20 @@ public class SemanticMatcher {
         this.stopwordsRemoval = stopwordsRemoval;
         this.posSelect = posSelect;
         this.distanceThreshold = distanceThreshold;
+        this.className = className;
         semanticMatches = new HashSet<SemanticMatch>();
 
         //TODO very naive list. Not the best to use.
-        this.stopwords =
+        stopwords =
                 new ArrayList<>(
                         Arrays.asList(
-                                "true", "false", "the", "a", "if", "for", "be", "is", "are", "was", "were", "this", "do",
-                                "does", "did", "not", "of"));
+                                "true", "false", "the", "a", "if", "for", "be", "this", "do",
+                                "not", "of", "only", "already", "specify"));
 
-        if (stopwordsRemoval) this.fileName = "semantic_" + className;
-        else this.fileName = "semantic_noSW_" + className;
+        if (stopwordsRemoval) fileName = "semantic_" + className;
+        else fileName = "semantic_noSW_" + className;
 
-        File file = new File(this.fileName);
+        File file = new File(fileName);
         try {
             Files.deleteIfExists(file.toPath());
         } catch (IOException e) {
@@ -68,7 +71,7 @@ public class SemanticMatcher {
     }
 
 
-    protected Set<DocumentedMethod> readMethodsFromJson(File goalFile){
+    Set<DocumentedMethod> readMethodsFromJson(File goalFile){
         try (BufferedReader reader =
                      Files.newBufferedReader(goalFile.toPath())){
 
@@ -91,7 +94,7 @@ public class SemanticMatcher {
      * @param goalFile the class goal file
      * @param codeElements the list of Java code elements for the translation
      */
-    public void runVectorMatch(GloveRandomAccessReader db, File goalFile, Set<SimpleMethodCodeElement> codeElements) throws IOException {
+    void runVectorMatch(GloveRandomAccessReader db, File goalFile, Set<SimpleMethodCodeElement> codeElements) throws IOException {
         Set<DocumentedMethod> methods = this.readMethodsFromJson(goalFile);
 
         for(DocumentedMethod m : methods){
@@ -164,10 +167,8 @@ public class SemanticMatcher {
                     double dist = cos.measureDistance(methodVector, commentVector);
                     distances.put(codeElement, dist);
                 }
-//                }
             }
             retainMatches(parsedComment, method.getName(), tag, distances);
-//          printOnFile(tag, method, comment, distances);
         }
     }
 
@@ -258,13 +259,13 @@ public class SemanticMatcher {
             index++;
         }
 
-        return  removeStopWords(wordComment);
+        return removeStopWords(wordComment);
     }
 
     static Set<String> removeStopWords(String[] words) {
         if (stopwordsRemoval) {
             for (int i = 0; i != words.length; i++) {
-                if (stopwordsRemoval && stopwords.contains(words[i].toLowerCase()))
+                if (stopwords.contains(words[i].toLowerCase()))
                     words[i] = "";
             }
         }

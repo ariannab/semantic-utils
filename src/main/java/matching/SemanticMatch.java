@@ -33,8 +33,8 @@ public class SemanticMatch {
     LinkedHashMap<SimpleMethodCodeElement, Double> candidates;
 
     /** Fields that define the correcteness and partial correctness of this match. */
-    boolean topCandidateIsCorrect;
-    boolean candidateFound;
+    public boolean topCandidateIsCorrect;
+    public boolean candidateFound;
 
 
     public SemanticMatch(Tag tag, String method, String parsedComment, float threshold) {

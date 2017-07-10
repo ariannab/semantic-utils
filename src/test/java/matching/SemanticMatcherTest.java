@@ -6,6 +6,7 @@ import com.google.gson.JsonStreamParser;
 import de.jungblut.glove.GloveRandomAccessReader;
 import de.jungblut.glove.impl.GloveBinaryRandomAccessReader;
 import org.junit.Test;
+import util.StatsUtil;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -24,7 +25,7 @@ public class SemanticMatcherTest {
             throws FileNotFoundException {
         Set<SimpleMethodCodeElement> collectedMethods = new HashSet<SimpleMethodCodeElement>();
         SemanticMatcher semanticMatcher = new SemanticMatcher(
-                className, true, true, false, (float)0.24);
+                className, true, true, false, (float)0.18);
 
         // Load all the DocumentedMethods composing a class using its goal file
         ClassLoader classLoader = getClass().getClassLoader();
@@ -41,6 +42,7 @@ public class SemanticMatcherTest {
 
         try {
             semanticMatcher.runVectorMatch(db, file, collectedMethods);
+            StatsUtil.computeStats(semanticMatcher);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -50,7 +52,7 @@ public class SemanticMatcherTest {
             throws FileNotFoundException {
         Set<SimpleMethodCodeElement> collectedMethods = new HashSet<SimpleMethodCodeElement>();
         ConceptualMatcher semanticMatcher = new ConceptualMatcher(
-                className, true, true, false, (float)0.8);
+                className, true, true, false, (float)0.75);
 
         // Load all the DocumentedMethods composing a class using its goal file
         ClassLoader classLoader = getClass().getClassLoader();
@@ -67,6 +69,7 @@ public class SemanticMatcherTest {
 
         try {
             semanticMatcher.runConceptualSim(db, file, collectedMethods);
+            StatsUtil.computeStats(semanticMatcher);
         } catch (IOException e) {
             e.printStackTrace();
         }
