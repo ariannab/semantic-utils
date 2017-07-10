@@ -20,7 +20,8 @@ import java.util.Set;
  */
 public class SemanticMatcherTest {
 
-    public void testVectorMatch(GloveRandomAccessReader db, String className, String goalOutputFile, String codeElementsFile) throws FileNotFoundException {
+    public void testVectorMatch(GloveRandomAccessReader db, String className, String goalOutputFile, String codeElementsFile)
+            throws FileNotFoundException {
         Set<SimpleMethodCodeElement> collectedMethods = new HashSet<SimpleMethodCodeElement>();
         SemanticMatcher semanticMatcher = new SemanticMatcher(
                 className, true, true, false, (float)0.24);
@@ -45,9 +46,10 @@ public class SemanticMatcherTest {
         }
     }
 
-    public void testConcSimMatch(GloveRandomAccessReader db, String className, String goalOutputFile, String codeElementsFile) throws FileNotFoundException {
+    public void testConcSimMatch(GloveRandomAccessReader db, String className, String goalOutputFile, String codeElementsFile)
+            throws FileNotFoundException {
         Set<SimpleMethodCodeElement> collectedMethods = new HashSet<SimpleMethodCodeElement>();
-        SemanticMatcher semanticMatcher = new SemanticMatcher(
+        ConceptualMatcher semanticMatcher = new ConceptualMatcher(
                 className, true, true, false, (float)0.8);
 
         // Load all the DocumentedMethods composing a class using its goal file
@@ -114,7 +116,7 @@ public class SemanticMatcherTest {
         String className = codeElements.substring(codeElements.indexOf("/")+1, codeElements.indexOf("_"));
 
         try {
-//            testVectorMatch(db, className, goalOutput, codeElements);
+            testVectorMatch(db, className, goalOutput, codeElements);
 //            testWmdMatch(className, goalOutput, codeElements);
             testConcSimMatch(db, className, goalOutput, codeElements);
         } catch (FileNotFoundException e) {
@@ -126,7 +128,7 @@ public class SemanticMatcherTest {
         className = codeElements.substring(codeElements.indexOf("/")+1, codeElements.indexOf("_"));
 
         try {
-//            testVectorMatch(db, className, goalOutput, codeElements);
+            testVectorMatch(db, className, goalOutput, codeElements);
 //            testWmdMatch(className, goalOutput, codeElements);
             testConcSimMatch(db, className, goalOutput, codeElements);
         } catch (FileNotFoundException e) {
