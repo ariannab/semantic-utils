@@ -76,30 +76,26 @@ public class SemanticMatcherTest {
     }
 
 
-//    public void testWmdMatch(String className, String goalOutputFile, String codeElementsFile) throws FileNotFoundException {
-//        Set<SimpleMethodCodeElement> collectedMethods = new HashSet<SimpleMethodCodeElement>();
-//        SemanticMatcher semanticMatcher = new SemanticMatcher(
-//                className, true, true, false, (float).24);
-//
-//        // Load all the DocumentedMethods composing a class using its goal file
-//        ClassLoader classLoader = getClass().getClassLoader();
-//        File file = new File(classLoader.getResource(goalOutputFile).getFile());
-//
-//        Gson gson = new GsonBuilder().create();
-//
-//        // This is the job that normally the JavaElementsCollector would do in Toradocu. For simplicity of test those code elements are stored in a Json.
-//        JsonStreamParser parser = new JsonStreamParser(new FileReader(new File(classLoader.getResource(codeElementsFile).getFile())));
-//        while(parser.hasNext())
-//        {
-//            collectedMethods.add(gson.fromJson(parser.next(), SimpleMethodCodeElement.class));
-//        }
-//
-//        try {
-//            semanticMatcher.runWmdMatch(file, collectedMethods);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//    }
+    public void testWmdMatch(String className, String goalOutputFile, String codeElementsFile) throws FileNotFoundException {
+        Set<SimpleMethodCodeElement> collectedMethods = new HashSet<SimpleMethodCodeElement>();
+        WMDMatcher semanticMatcher = new WMDMatcher(
+                className, true, true, false, (float)6);
+
+        // Load all the DocumentedMethods composing a class using its goal file
+        ClassLoader classLoader = getClass().getClassLoader();
+        File file = new File(classLoader.getResource(goalOutputFile).getFile());
+
+        Gson gson = new GsonBuilder().create();
+
+        // This is the job that normally the JavaElementsCollector would do in Toradocu. For simplicity of test those code elements are stored in a Json.
+        JsonStreamParser parser = new JsonStreamParser(new FileReader(new File(classLoader.getResource(codeElementsFile).getFile())));
+        while(parser.hasNext())
+        {
+            collectedMethods.add(gson.fromJson(parser.next(), SimpleMethodCodeElement.class));
+        }
+        semanticMatcher.runWmdMatch(file, collectedMethods);
+        StatsUtil.computeStats(semanticMatcher);
+    }
 
 
     //TODO generalize the test cases.
@@ -120,8 +116,8 @@ public class SemanticMatcherTest {
 
         try {
             testVectorMatch(db, className, goalOutput, codeElements);
-//            testWmdMatch(className, goalOutput, codeElements);
             testConcSimMatch(db, className, goalOutput, codeElements);
+            testWmdMatch(className, goalOutput, codeElements);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -132,8 +128,8 @@ public class SemanticMatcherTest {
 
         try {
             testVectorMatch(db, className, goalOutput, codeElements);
-//            testWmdMatch(className, goalOutput, codeElements);
             testConcSimMatch(db, className, goalOutput, codeElements);
+            testWmdMatch(className, goalOutput, codeElements);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }

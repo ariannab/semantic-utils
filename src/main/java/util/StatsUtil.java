@@ -3,6 +3,7 @@ package util;
 import matching.ConceptualMatcher;
 import matching.SemanticMatch;
 import matching.SemanticMatcher;
+import matching.WMDMatcher;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -22,8 +23,13 @@ public class StatsUtil {
 
             if(matcher instanceof ConceptualMatcher)
                 writer.append("Conceptual Matcher");
+            else  if(matcher instanceof WMDMatcher)
+                writer.append("WMD Matcher");
             else
                 writer.append("Basic Vector Matcher");
+
+
+
             writer.append("\n");
 
             writer.append("Class Name");

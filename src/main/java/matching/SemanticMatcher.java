@@ -5,7 +5,6 @@ import de.jungblut.distance.CosineDistance;
 import de.jungblut.glove.GloveRandomAccessReader;
 import de.jungblut.math.DoubleVector;
 import edu.stanford.nlp.ling.CoreLabel;
-import org.jetbrains.annotations.Nullable;
 import org.toradocu.extractor.DocumentedMethod;
 import org.toradocu.extractor.Tag;
 import org.toradocu.translator.StanfordParser;
@@ -209,7 +208,6 @@ public class SemanticMatcher {
         return codeElementVector;
     }
 
-    @Nullable
     private static DoubleVector getCommentVector(Set<String> wordComment, GloveRandomAccessReader db) throws IOException {
         DoubleVector commentVector = null;
         Iterator<String> wordIterator = wordComment.iterator();
