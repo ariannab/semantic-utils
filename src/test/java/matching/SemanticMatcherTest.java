@@ -79,7 +79,7 @@ public class SemanticMatcherTest {
     public void testWmdMatch(String className, String goalOutputFile, String codeElementsFile) throws FileNotFoundException {
         Set<SimpleMethodCodeElement> collectedMethods = new HashSet<SimpleMethodCodeElement>();
         WMDMatcher semanticMatcher = new WMDMatcher(
-                className, true, true, false, (float)6);
+                className, true, true, false, (float)5.5);
 
         // Load all the DocumentedMethods composing a class using its goal file
         ClassLoader classLoader = getClass().getClassLoader();

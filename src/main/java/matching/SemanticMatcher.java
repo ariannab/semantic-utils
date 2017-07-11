@@ -261,9 +261,12 @@ public class SemanticMatcher {
     }
 
     static Set<String> removeStopWords(String[] words) {
+        // Subject often is not useful at all (usually it's the target). Try removing it
+        String simpleClassName = className.substring(className.lastIndexOf(".")+1, className.length()).toLowerCase();
+
         if (stopwordsRemoval) {
             for (int i = 0; i != words.length; i++) {
-                if (stopwords.contains(words[i].toLowerCase()))
+                if (words[i].equals(simpleClassName) || stopwords.contains(words[i].toLowerCase()))
                     words[i] = "";
             }
         }
