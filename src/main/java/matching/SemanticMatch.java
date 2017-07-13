@@ -1,8 +1,9 @@
 package matching;
 
+import com.google.gson.annotations.Expose;
 import org.toradocu.extractor.Tag;
 
-import java.util.LinkedHashMap;
+import java.util.*;
 
 /**
  * Created by arianna on 29/05/17.
@@ -13,7 +14,8 @@ import java.util.LinkedHashMap;
  *
  */
 
-public class SemanticMatch {
+public class SemanticMatch implements Comparable<SemanticMatch>{
+
     /** The method the Tag belongs to. */
     String method;
 
@@ -26,14 +28,18 @@ public class SemanticMatch {
     /** The result of comment parsing: stopwords removal etc. */
     String parsedComment;
 
+
     /**
      * Method code element that have a semantic distance from the comment which is below the
      * threshold,i.e. candidates for the correct translation.
      */
     LinkedHashMap<SimpleMethodCodeElement, Double> candidates;
 
+
     /** Fields that define the correcteness and partial correctness of this match. */
+    @Expose
     public boolean topCandidateIsCorrect;
+    @Expose
     public boolean candidateFound;
 
 
@@ -67,5 +73,30 @@ public class SemanticMatch {
             }
         }
         this.candidateFound = false;
+    }
+
+
+    public String getMethod() {
+        return method;
+    }
+
+    public void setCandidates(LinkedHashMap<SimpleMethodCodeElement, Double> orderedDistances) {
+        int i=0;
+        this.candidates = new LinkedHashMap<SimpleMethodCodeElement, Double>();
+        for (Map.Entry<SimpleMethodCodeElement, Double> entry : orderedDistances.entrySet()) {
+            this.candidates.put(entry.getKey(), entry.getValue());
+            i++;
+            if(i==5)
+                return;
+        }
+    }
+
+    public LinkedHashMap<SimpleMethodCodeElement, Double> getCandidates() {
+        return candidates;
+    }
+
+    @Override
+    public int compareTo(SemanticMatch semanticMatch) {
+        return this.method.compareTo(semanticMatch.method);
     }
 }

@@ -114,7 +114,7 @@ public class ConceptualMatcher extends SemanticMatcher {
     }
 
     void runConceptualSim(GloveRandomAccessReader db, File goalFile, Set<SimpleMethodCodeElement> codeElements) throws IOException {
-        Set<DocumentedMethod> methods = super.readMethodsFromJson(goalFile);
+        Set<DocumentedMethod> methods = this.readMethodsFromJson(goalFile);
 
         for(DocumentedMethod m : methods){
             HashSet<SimpleMethodCodeElement> referredCodeElements = codeElements
@@ -159,34 +159,5 @@ public class ConceptualMatcher extends SemanticMatcher {
         }
 
         return 0;
-    }
-
-    @Override
-    void retainMatches(String parsedComment, String methodName, Tag tag, Map<SimpleMethodCodeElement, Double> distances){
-        SemanticMatch aMatch = new SemanticMatch(tag, methodName, parsedComment, distanceThreshold);
-
-        // Select as candidates only code elements that have a semantic distance above the chosen threshold.
-        distances.values().removeIf(new Predicate<Double>() {
-            @Override
-            public boolean test(Double aDouble) {
-                return aDouble < distanceThreshold;
-            }
-        });
-
-        aMatch.candidates = distances.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByValue(Collections.reverseOrder()))
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (e1, e2) -> e1,
-                        LinkedHashMap::new
-                ));
-
-        if(!aMatch.candidates.isEmpty()) {
-            aMatch.computeCorrectness();
-            aMatch.computePartialCorrectness();
-            semanticMatches.add(aMatch);
-        }
     }
 }

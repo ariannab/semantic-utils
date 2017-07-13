@@ -4,16 +4,13 @@ import com.crtomirmajer.wmd4j.WordMovers;
 import edu.stanford.nlp.ling.CoreLabel;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
-import org.deeplearning4j.models.embeddings.wordvectors.WordVectorsImpl;
 import org.toradocu.extractor.DocumentedMethod;
 import org.toradocu.extractor.Tag;
 import org.toradocu.translator.StanfordParser;
 import util.OutputUtil;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -21,25 +18,13 @@ import java.util.stream.Collectors;
  * Created by arianna on 10/07/17.
  */
 public class WMDMatcher extends SemanticMatcher {
-    public WMDMatcher(String className, boolean stopwordsRemoval, boolean posSelect, boolean tfid, float distanceThreshold) {
+    WMDMatcher(String className, boolean stopwordsRemoval, boolean posSelect, boolean tfid, float distanceThreshold) {
         super(className, stopwordsRemoval, posSelect, tfid, distanceThreshold);
     }
 
-    public void runWmdMatch(File goalFile, Set<SimpleMethodCodeElement> codeElements){
-        Set<DocumentedMethod> methods = readMethodsFromJson(goalFile);
+    void runWmdMatch(File goalFile, Set<SimpleMethodCodeElement> codeElements, WordVectors vectors){
+        Set<DocumentedMethod> methods = this.readMethodsFromJson(goalFile);
 
-        ClassLoader classLoader = getClass().getClassLoader();
-//        File file = new File(classLoader.getResource("GoogleNews-vectors-negative300.bin.gz").getFile());
-//        WordVectors vectors = WordVectorSerializer.loadGoogleModel(file, true);
-        File file = new File("/home/arianna/Scaricati/glove-master/target/glove.6B.300d.txt");
-        WordVectors vectors = null;
-        try {
-            vectors = WordVectorSerializer.loadTxtVectors(file);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
         WordMovers wm = WordMovers.Builder().wordVectors(vectors).build();
 
         for(DocumentedMethod m : methods){
@@ -70,9 +55,7 @@ public class WMDMatcher extends SemanticMatcher {
         }
     }
 
-
-
-    void wmdMatch(WordMovers wm, Tag tag, DocumentedMethod method, Set<SimpleMethodCodeElement> codeElements){
+    private void wmdMatch(WordMovers wm, Tag tag, DocumentedMethod method, Set<SimpleMethodCodeElement> codeElements){
         Map<SimpleMethodCodeElement, Double> distances = new HashMap<SimpleMethodCodeElement, Double>();
         Set<String> commentWordSet = super.parseComment(tag, method);
         String parsedComment = String.join(" ", commentWordSet).replaceAll("\\s+", " ").trim();
@@ -99,6 +82,6 @@ public class WMDMatcher extends SemanticMatcher {
                 }
             }
         }
-        retainMatches(parsedComment, method.getName(), tag, distances);
+        retainMatches(parsedComment, method.getSignature(), tag, distances);
     }
 }

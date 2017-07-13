@@ -6,12 +6,14 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import matching.SemanticMatch;
 import matching.SemanticMatcher;
+import org.toradocu.extractor.DocumentedMethod;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.*;
 
 /**
  * Created by arianna on 27/06/17.
@@ -41,13 +43,17 @@ public class OutputUtil {
 
         Gson gson = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create();
         if(!SemanticMatcher.semanticMatches.isEmpty()) {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(resultFile, true));
-            for (SemanticMatch sm : SemanticMatcher.semanticMatches) {
-                    JsonParser jp = new JsonParser();
-                    JsonElement je = jp.parse(gson.toJson(sm));
-                    String prettyJsonString = gson.toJson(je);
+            SortedSet<SemanticMatch> matches = new TreeSet<SemanticMatch>();
+            matches.addAll(SemanticMatcher.semanticMatches);
 
-                    writer.write(prettyJsonString+"\n");
+            BufferedWriter writer = new BufferedWriter(new FileWriter(resultFile, true));
+
+            for (SemanticMatch sm : matches) {
+                JsonParser jp = new JsonParser();
+                JsonElement je = jp.parse(gson.toJson(sm));
+                String prettyJsonString = gson.toJson(je);
+
+                writer.write(prettyJsonString+"\n");
                 }
             writer.close();
         }

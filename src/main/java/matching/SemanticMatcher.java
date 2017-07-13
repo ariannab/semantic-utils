@@ -74,7 +74,7 @@ public class SemanticMatcher {
         try (BufferedReader reader =
                      Files.newBufferedReader(goalFile.toPath())){
 
-            Set<DocumentedMethod> methods = new HashSet<DocumentedMethod>();
+            Set<DocumentedMethod> methods = new HashSet<>();
             methods.addAll(
                     GsonInstance.gson()
                             .fromJson(reader, new TypeToken<Set<DocumentedMethod>>() {}.getType()));
@@ -167,7 +167,7 @@ public class SemanticMatcher {
                     distances.put(codeElement, dist);
                 }
             }
-            retainMatches(parsedComment, method.getName(), tag, distances);
+            retainMatches(parsedComment, method.getSignature(), tag, distances);
         }
     }
 
@@ -288,22 +288,39 @@ public class SemanticMatcher {
         SemanticMatch aMatch = new SemanticMatch(tag, methodName, parsedComment, distanceThreshold);
 
         // Select as candidates only code elements that have a semantic distance below the chosen threshold.
-        distances.values().removeIf(new Predicate<Double>() {
-            @Override
-            public boolean test(Double aDouble) {
-                return aDouble > distanceThreshold;
-            }
-        });
+        if(distanceThreshold!=-1) {
+            distances.values().removeIf(new Predicate<Double>() {
+                @Override
+                public boolean test(Double aDouble) {
+                    return aDouble > distanceThreshold;
+                }
+            });
+        }
 
-        aMatch.candidates = distances.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByValue())
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        Map.Entry::getValue,
-                        (e1, e2) -> e1,
-                        LinkedHashMap::new
-                ));
+        LinkedHashMap<SimpleMethodCodeElement, Double> orderedDistances;
+        if(this instanceof ConceptualMatcher){
+            orderedDistances = distances.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByValue(Collections.reverseOrder()))
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (e1, e2) -> e1,
+                            LinkedHashMap::new
+                    ));
+
+        }else
+            orderedDistances = distances.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.comparingByValue())
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            Map.Entry::getValue,
+                            (e1, e2) -> e1,
+                            LinkedHashMap::new
+                    ));
+
+        aMatch.setCandidates(orderedDistances);
 
         if(!aMatch.candidates.isEmpty()) {
             aMatch.computeCorrectness();
