@@ -9,11 +9,11 @@ import org.toradocu.extractor.Tag;
 import org.toradocu.translator.StanfordParser;
 import util.AlignmentScore;
 import util.OutputUtil;
+import util.SimpleMethodCodeElement;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**

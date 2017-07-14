@@ -8,6 +8,7 @@ import org.toradocu.extractor.DocumentedMethod;
 import org.toradocu.extractor.Tag;
 import org.toradocu.translator.StanfordParser;
 import util.OutputUtil;
+import util.SimpleMethodCodeElement;
 
 import java.io.File;
 import java.io.IOException;

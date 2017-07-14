@@ -8,6 +8,7 @@ import de.jungblut.glove.impl.GloveBinaryRandomAccessReader;
 import org.deeplearning4j.models.embeddings.loader.WordVectorSerializer;
 import org.deeplearning4j.models.embeddings.wordvectors.WordVectors;
 import org.junit.Test;
+import util.SimpleMethodCodeElement;
 import util.StatsUtil;
 
 import java.io.File;
@@ -37,7 +38,8 @@ public class SemanticMatcherTest {
 
         Gson gson = new GsonBuilder().create();
 
-        // This is the job that normally the JavaElementsCollector would do in Toradocu. For simplicity of test those code elements are stored in a Json.
+        // This is the job that normally the JavaElementsCollector would do in Toradocu.
+        // For simplicity of test those code elements are stored in a Json.
         JsonStreamParser parser = new JsonStreamParser(new FileReader(new File(classLoader.getResource(codeElementsFile).getFile())));
         while(parser.hasNext())
         {
@@ -65,7 +67,8 @@ public class SemanticMatcherTest {
 
         Gson gson = new GsonBuilder().create();
 
-        // This is the job that normally the JavaElementsCollector would do in Toradocu. For simplicity of test those code elements are stored in a Json.
+        // This is the job that normally the JavaElementsCollector would do in Toradocu.
+        // For simplicity of test those code elements are stored in a Json.
         JsonStreamParser parser = new JsonStreamParser(new FileReader(new File(classLoader.getResource(codeElementsFile).getFile())));
         while(parser.hasNext())
         {
@@ -93,7 +96,8 @@ public class SemanticMatcherTest {
 
         Gson gson = new GsonBuilder().create();
 
-        // This is the job that normally the JavaElementsCollector would do in Toradocu. For simplicity of test those code elements are stored in a Json.
+        // This is the job that normally the JavaElementsCollector would do in Toradocu.
+        // For simplicity of test those code elements are stored in a Json.
         JsonStreamParser parser = new JsonStreamParser(new FileReader(new File(classLoader.getResource(codeElementsFile).getFile())));
         while(parser.hasNext())
         {
@@ -114,6 +118,49 @@ public class SemanticMatcherTest {
             e.printStackTrace();
         }
 
+        // vectors databases are loaded only once
+        GloveRandomAccessReader gloveBinaryDb = setUpGloveBinaryDB();
+        WordVectors gloveVectors = setUpGloveTxtVectors();
+
+        String goalOutput= "goals/freecol-0.11.6/net.sf.freecol.common.model.Unit_goal.json";
+        String codeElements = "code-elements/net.sf.freecol.common.model.Unit_codeElements.json";
+        String className = codeElements.substring(codeElements.indexOf("/")+1, codeElements.indexOf("_"));
+
+        try {
+            testVectorMatch(gloveBinaryDb, className, goalOutput, codeElements);
+            testConcSimMatch(gloveBinaryDb, className, goalOutput, codeElements);
+            testWmdMatch(className, goalOutput, codeElements, gloveVectors);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        goalOutput= "goals/jgrapht/org.jgrapht.Graph_goal.json";
+        codeElements = "code-elements/org.jgrapht.Graph_codeElements.json";
+        className = codeElements.substring(codeElements.indexOf("/")+1, codeElements.indexOf("_"));
+
+        try {
+            testVectorMatch(gloveBinaryDb, className, goalOutput, codeElements);
+            testConcSimMatch(gloveBinaryDb, className, goalOutput, codeElements);
+            testWmdMatch(className, goalOutput, codeElements, gloveVectors);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private WordVectors setUpGloveTxtVectors() {
+        File gloveTxt = new File("/home/arianna/Scaricati/glove-master/target/glove.6B.300d.txt");
+        WordVectors gloveVectors = null;
+        try {
+            gloveVectors = WordVectorSerializer.loadTxtVectors(gloveTxt);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return gloveVectors;
+    }
+
+    private GloveRandomAccessReader setUpGloveBinaryDB() {
         GloveRandomAccessReader gloveBinaryDb = null;
         try {
             gloveBinaryDb =
@@ -122,40 +169,6 @@ public class SemanticMatcherTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
-        File gloveTxt = new File("/home/arianna/Scaricati/glove-master/target/glove.6B.300d.txt");
-        WordVectors gloveVectors = null;
-        try {
-            gloveVectors = WordVectorSerializer.loadTxtVectors(gloveTxt);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        String goalOutput= "goals/freecol-0.11.6/net.sf.freecol.common.model.Unit_goal.json";
-        String codeElements = "code-elements/net.sf.freecol.common.model.Unit_codeElements.json";
-        String className = codeElements.substring(codeElements.indexOf("/")+1, codeElements.indexOf("_"));
-
-//        try {
-////            testVectorMatch(gloveBinaryDb, className, goalOutput, codeElements);
-////            testConcSimMatch(gloveBinaryDb, className, goalOutput, codeElements);
-////            testWmdMatch(className, goalOutput, codeElements, gloveVectors);
-//        } catch (FileNotFoundException e) {
-//            e.printStackTrace();
-//        }
-
-        goalOutput= "goals/jgrapht/org.jgrapht.Graph_goal.json";
-        codeElements = "code-elements/org.jgrapht.Graph_codeElements.json";
-        className = codeElements.substring(codeElements.indexOf("/")+1, codeElements.indexOf("_"));
-
-        try {
-            testVectorMatch(gloveBinaryDb, className, goalOutput, codeElements);
-//            testConcSimMatch(gloveBinaryDb, className, goalOutput, codeElements);
-//            testWmdMatch(className, goalOutput, codeElements, gloveVectors);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
-
-
+        return gloveBinaryDb;
     }
 }

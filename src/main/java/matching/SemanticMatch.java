@@ -2,6 +2,7 @@ package matching;
 
 import com.google.gson.annotations.Expose;
 import org.toradocu.extractor.Tag;
+import util.SimpleMethodCodeElement;
 
 import java.util.*;
 

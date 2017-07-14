@@ -10,6 +10,7 @@ import org.toradocu.extractor.Tag;
 import org.toradocu.translator.StanfordParser;
 import org.toradocu.util.GsonInstance;
 import util.OutputUtil;
+import util.SimpleMethodCodeElement;
 
 import java.io.*;
 import java.nio.file.Files;
